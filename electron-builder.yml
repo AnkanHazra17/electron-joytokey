@@ -1,6 +1,7 @@
-appId: com.yourorg.electron-joytokey
+appId: com.ankan17.joytokey
 productName: JoyToKey
-copyright: Copyright © 2026 Your Organisation
+copyright: Copyright © 2026 Ankan
+
 directories:
   buildResources: resources
   output: release
@@ -13,41 +14,33 @@ files:
 asar: true
 asarUnpack:
   - node_modules/node-hid/**
-  - node_modules/robotjs/**
   - node_modules/active-win/**
-  - node_modules/@jitsi/**
+
+extraResources:
+  - from: resources/cgkey.ps1
+    to: cgkey.ps1
 
 npmRebuild: true
 
-mac:
+win:
   target:
-    - target: dmg
+    - target: nsis
       arch: [x64, arm64]
-    - target: zip
-      arch: [x64, arm64]
-  category: public.app-category.utilities
-  hardenedRuntime: true
-  gatekeeperAssess: false
-  entitlements: resources/entitlements.mac.plist
-  entitlementsInherit: resources/entitlements.mac.plist
-  icon: resources/icon.icns
+    - target: portable
+      arch: [x64]
+  icon: resources/icon.ico
+  requestedExecutionLevel: asInvoker
 
-dmg:
-  title: JoyToKey ${version}
-  background: resources/dmg-background.png
-  window:
-    width: 540
-    height: 380
-  contents:
-    - x: 130
-      y: 220
-    - x: 410
-      y: 220
-      type: link
-      path: /Applications
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  installerIcon: resources/icon.ico
+  uninstallerIcon: resources/icon.ico
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
 
 publish:
   provider: github
-  owner: your-org
+  owner: ankan17
   repo: electron-joytokey
   releaseType: release
