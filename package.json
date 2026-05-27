@@ -18,6 +18,7 @@
     "rebuild": "node scripts/rebuild-natives.mjs",
     "dist": "npm run build && electron-builder",
     "dist:mac": "npm run build && electron-builder --mac",
+    "dist:win": "npm run build && electron-builder --win",
     "postinstall": "node scripts/rebuild-natives.mjs"
   },
   "dependencies": {

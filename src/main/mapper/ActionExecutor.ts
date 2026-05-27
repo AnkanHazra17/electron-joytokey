@@ -6,19 +6,24 @@ import log from '../logger'
 
 let cgkeyProc: ChildProcessWithoutNullStreams | null = null
 
-function getCgkeyPath(): string {
-  if (app.isPackaged) {
-    // In packaged app, resources are in process.resourcesPath
-    return join(process.resourcesPath, 'cgkey')
+function getCgkeyPath(): { bin: string; args: string[] } {
+  if (process.platform === 'win32') {
+    const ps1 = app.isPackaged
+      ? join(process.resourcesPath, 'cgkey.ps1')
+      : resolve(__dirname, '../../../resources/cgkey.ps1')
+    return { bin: 'powershell', args: ['-ExecutionPolicy', 'Bypass', '-NoProfile', '-File', ps1] }
   }
-  return resolve(__dirname, '../../../resources/cgkey')
+  const bin = app.isPackaged
+    ? join(process.resourcesPath, 'cgkey')
+    : resolve(__dirname, '../../../resources/cgkey')
+  return { bin, args: [] }
 }
 
 function ensureProc(): ChildProcessWithoutNullStreams {
   if (cgkeyProc && !cgkeyProc.killed) return cgkeyProc
 
-  const bin = getCgkeyPath()
-  cgkeyProc = spawn(bin, [], { stdio: ['pipe', 'pipe', 'pipe'] })
+  const { bin, args } = getCgkeyPath()
+  cgkeyProc = spawn(bin, args, { stdio: ['pipe', 'pipe', 'pipe'] })
 
   cgkeyProc.on('error', (err) => log.error('[ActionExecutor] cgkey error:', err.message))
   cgkeyProc.on('exit', (code) => {
