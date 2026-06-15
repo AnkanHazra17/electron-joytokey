@@ -4,6 +4,7 @@ import { createWindow, getMainWindow } from './window'
 import { initTray, rebuildMenu } from './tray'
 import { registerHandlers } from './ipc/handlers'
 import { hidManager } from './hid/HidManager'
+import { isWhizToysDevice } from './hid/DeviceDescriptor'
 import { mappingEngine } from './mapper/MappingEngine'
 import { profileMatcher } from './mapper/ProfileMatcher'
 import { initAutoUpdater, installUpdate } from './updater/AutoUpdater'
@@ -59,6 +60,25 @@ app.whenReady().then(() => {
     send(IPC_CHANNELS.INPUT_EVENT, evt)
   })
   hidManager.on('devices:changed', (devices) => send(IPC_CHANNELS.DEVICES_CHANGED, devices))
+
+  hidManager.on('device:disconnected', () => {
+    mappingEngine.releaseHeldKeys()
+  })
+
+  hidManager.on('whiztoys:connected', ({ product, vendorId, productId }: { path: string; product: string; vendorId: number; productId: number }) => {
+    const profiles = ConfigStore.getProfiles()
+    const existing = profiles.find(
+      (p) =>
+        (p.deviceName !== undefined && isWhizToysDevice(p.deviceName, '')) ||
+        (p.deviceVid === vendorId && p.devicePid === productId)
+    )
+    const profile = existing ?? ConfigStore.saveProfile(ConfigStore.createWhizToysProfile(product))
+    ConfigStore.setActiveProfileId(profile.id)
+    mappingEngine.setActiveProfile(profile)
+    send(IPC_CHANNELS.PROFILE_ACTIVATED, { profileId: profile.id })
+    rebuildTray()
+  })
+
   hidManager.start()
 
   // Mapping engine → renderer

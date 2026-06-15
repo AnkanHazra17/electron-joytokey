@@ -114,14 +114,14 @@ $MOD_VKs = @{ 'shift'=0x10; 'ctrl'=0x11; 'alt'=0x12; 'win'=0x5B }
 
 function Resolve-VK($name) {
     $n = $name.ToLower()
-    if ($VK.ContainsKey($n)) { return [ushort]$VK[$n] }
+    if ($VK.ContainsKey($n)) { return [System.UInt16]$VK[$n] }
     return $null
 }
 
 function Send-KeyDown($key, $mods) {
     foreach ($m in $mods) {
         $mvk = $MOD_VKs[$m.ToLower()]
-        if ($mvk) { [KeyInject]::KeyDown([ushort]$mvk) }
+        if ($mvk) { [KeyInject]::KeyDown([System.UInt16]$mvk) }
     }
     $vk = Resolve-VK $key
     if ($vk) { [KeyInject]::KeyDown($vk) }
@@ -132,7 +132,7 @@ function Send-KeyUp($key, $mods) {
     if ($vk) { [KeyInject]::KeyUp($vk) }
     foreach ($m in [Linq.Enumerable]::Reverse($mods)) {
         $mvk = $MOD_VKs[$m.ToLower()]
-        if ($mvk) { [KeyInject]::KeyUp([ushort]$mvk) }
+        if ($mvk) { [KeyInject]::KeyUp([System.UInt16]$mvk) }
     }
 }
 

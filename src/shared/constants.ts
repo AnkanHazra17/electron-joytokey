@@ -1,6 +1,6 @@
 export const DEFAULT_DEAD_ZONE = 0.1
 export const DEFAULT_HOTKEY = 'CmdOrCtrl+Shift+J'
-export const CONFIG_VERSION = 1
+export const CONFIG_VERSION = 2
 export const ACTIVE_WIN_POLL_MS = 1000
 export const HID_POLL_MS = 2000     // USB hotplug polling interval on macOS
 export const AXIS_NEUTRAL = 0.5     // normalized center value for axes

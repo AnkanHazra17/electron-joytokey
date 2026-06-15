@@ -11,6 +11,20 @@ interface Props {
 }
 
 const MODIFIER_KEYS = new Set(['Meta', 'Control', 'Shift', 'Alt'])
+
+// browser KeyboardEvent.key → cgkey.ps1 VK table name
+const KEY_NAME_MAP: Record<string, string> = {
+  ' ': 'space',
+  arrowup: 'up',
+  arrowdown: 'down',
+  arrowleft: 'left',
+  arrowright: 'right',
+}
+
+function normalizeKey(key: string): string {
+  const lower = key.toLowerCase()
+  return KEY_NAME_MAP[lower] ?? lower
+}
 const MODIFIER_MAP: Record<string, ModifierKey> = {
   Meta: 'command', Control: 'control', Shift: 'shift', Alt: 'option',
 }
@@ -32,7 +46,7 @@ export function KeyAssignModal({ open, trigger, onClose, onSave }: Props) {
       const mods = (['Meta', 'Control', 'Shift', 'Alt'] as const)
         .filter((k) => e.getModifierState(k))
         .map((k) => MODIFIER_MAP[k])
-      setCapturedKey(e.key.toLowerCase())
+      setCapturedKey(normalizeKey(e.key))
       setCapturedMods(mods)
     }
     window.addEventListener('keydown', onKeyDown)

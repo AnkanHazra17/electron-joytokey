@@ -41,7 +41,14 @@ export function registerHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.PROFILES_SAVE, (_e, payload) => {
     const parsed = profileSchema.safeParse(payload)
     if (!parsed.success) return err(parsed.error.message)
-    return safe(() => ConfigStore.saveProfile(parsed.data as unknown as Profile))
+    return safe(() => {
+      const saved = ConfigStore.saveProfile(parsed.data as unknown as Profile)
+      // Hot-reload the engine if the updated profile is currently active
+      if (ConfigStore.getConfig().activeProfileId === saved.id) {
+        mappingEngine.setActiveProfile(saved)
+      }
+      return saved
+    })
   })
 
   ipcMain.handle(IPC_CHANNELS.PROFILES_DELETE, (_e, payload) => {

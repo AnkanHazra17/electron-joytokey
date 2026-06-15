@@ -18,7 +18,7 @@ export function MappingPage() {
   const activeProfile = profiles.find((p) => p.id === activeProfileId) ?? null
 
   const handleCellClick = (type: 'button' | 'axis' | 'hat', index: number) => {
-    setAssignTrigger({ type, index, condition: type === 'axis' ? 'threshold' : 'press' })
+    setAssignTrigger({ type, index, condition: type === 'axis' ? 'threshold' : 'held' })
     setModalOpen(true)
   }
 

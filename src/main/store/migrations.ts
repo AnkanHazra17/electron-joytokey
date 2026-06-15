@@ -18,4 +18,8 @@ export const migrations: Record<number, (config: AnyConfig) => AnyConfig> = {
       connectedDevicePaths: c.connectedDevicePaths ?? [],
     }
   },
+  2: (config) => {
+    // v1 → v2: add optional deviceName field to profiles (no structural change needed)
+    return { ...config, configVersion: 2 }
+  },
 }

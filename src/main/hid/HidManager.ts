@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events'
 import type { HidDeviceInfo, JoystickEvent } from '@shared/types'
 import { HID_POLL_MS } from '@shared/constants'
-import { getStrategy } from './DeviceDescriptor'
+import { getStrategy, getDeviceLayout, normalizeWhizToysReport } from './DeviceDescriptor'
 import { HidReader } from './HidReader'
 import log from '../logger'
 
@@ -46,6 +46,7 @@ export class HidManager extends EventEmitter {
         usage: d.usage ?? 0,
         usagePage: d.usagePage ?? 0,
         isOpen: this.readers.has(d.path ?? ''),
+        layout: getDeviceLayout(d.vendorId, d.productId, d.product ?? '', d.manufacturer ?? ''),
       }))
   }
 
@@ -53,9 +54,13 @@ export class HidManager extends EventEmitter {
     if (this.readers.has(path)) return
     try {
       const { HID } = HIDLib()
+      const info = HIDLib().devices().find((d) => d.path === path)
+      const product = info?.product ?? ''
+      const manufacturer = info?.manufacturer ?? ''
+      const strategy = getStrategy(vendorId, productId, product, manufacturer)
+      const preprocessor = strategy.name === 'WhizToys BLE Gamepad' ? normalizeWhizToysReport : undefined
       const device = new HID(path)
-      const strategy = getStrategy(vendorId, productId)
-      const reader = new HidReader(device, path, strategy)
+      const reader = new HidReader(device, path, strategy, preprocessor)
       reader.on('joystick:input', (evt: JoystickEvent) => this.emit('joystick:input', evt))
       reader.on('error', () => {
         this.readers.delete(path)
@@ -63,6 +68,9 @@ export class HidManager extends EventEmitter {
       })
       this.readers.set(path, reader)
       log.info(`[HidManager] opened ${path} (${strategy.name})`)
+      if (strategy.name === 'WhizToys BLE Gamepad') {
+        this.emit('whiztoys:connected', { path, product, vendorId, productId })
+      }
       this.emit('devices:changed', this.enumerate())
     } catch (err) {
       log.error(`[HidManager] failed to open ${path}:`, err)
@@ -75,6 +83,7 @@ export class HidManager extends EventEmitter {
       reader.close()
       this.readers.delete(path)
       log.info(`[HidManager] closed ${path}`)
+      this.emit('device:disconnected', path)
       this.emit('devices:changed', this.enumerate())
     }
   }

@@ -10,12 +10,12 @@ function getCgkeyPath(): { bin: string; args: string[] } {
   if (process.platform === 'win32') {
     const ps1 = app.isPackaged
       ? join(process.resourcesPath, 'cgkey.ps1')
-      : resolve(__dirname, '../../../resources/cgkey.ps1')
+      : resolve(__dirname, '../../resources/cgkey.ps1')
     return { bin: 'powershell', args: ['-ExecutionPolicy', 'Bypass', '-NoProfile', '-File', ps1] }
   }
   const bin = app.isPackaged
     ? join(process.resourcesPath, 'cgkey')
-    : resolve(__dirname, '../../../resources/cgkey')
+    : resolve(__dirname, '../../resources/cgkey')
   return { bin, args: [] }
 }
 

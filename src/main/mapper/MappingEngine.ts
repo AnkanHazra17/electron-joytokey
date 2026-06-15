@@ -95,6 +95,18 @@ export class MappingEngine extends EventEmitter {
     }
   }
 
+  releaseHeldKeys(): void {
+    this.buttonState.forEach((held, stateKey) => {
+      if (held) {
+        const mapping = this.findHeldMapping(stateKey)
+        if (mapping?.action.toggle) execute(mapping.action, false)
+      }
+    })
+    this.buttonState.clear()
+    this.axisTriggered.clear()
+    log.info('[MappingEngine] released held keys on disconnect')
+  }
+
   private findHeldMapping(stateKey: string): Mapping | undefined {
     if (!this.activeProfile) return undefined
     const [type, idxStr] = stateKey.split(':')

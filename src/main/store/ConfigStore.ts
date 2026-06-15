@@ -1,7 +1,7 @@
 import Store from 'electron-store'
 import { produce } from 'immer'
 import { v4 as uuidv4 } from 'uuid'
-import type { AppConfig, Profile } from '@shared/types'
+import type { AppConfig, Mapping, Profile } from '@shared/types'
 import { CONFIG_VERSION, DEFAULT_DEAD_ZONE, DEFAULT_HOTKEY } from '@shared/constants'
 import { migrations } from './migrations'
 
@@ -90,6 +90,36 @@ export const ConfigStore = {
       deadZones: {},
       axisCount: 6,
       buttonCount: 16,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    }
+  },
+
+  createWhizToysProfile(deviceName = 'WTS2-jyt'): Profile {
+    const btn = (index: number, key: string): Mapping => ({
+      id: uuidv4(),
+      label: `Button ${index + 1}`,
+      trigger: { type: 'button', index, condition: 'held' },
+      action: { type: 'key', key, toggle: true },
+      enabled: true,
+    })
+    return {
+      id: uuidv4(),
+      name: 'WhizToys Default',
+      deviceName,
+      buttonCount: 8,
+      axisCount: 0,
+      mappings: [
+        btn(0, 'up'),
+        btn(1, 'down'),
+        btn(2, 'left'),
+        btn(3, 'right'),
+        btn(4, 'space'),
+        btn(5, 'return'),
+        btn(6, 'escape'),
+        btn(7, 'tab'),
+      ],
+      deadZones: {},
       createdAt: Date.now(),
       updatedAt: Date.now(),
     }

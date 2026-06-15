@@ -12,7 +12,8 @@ export class HidReader extends EventEmitter {
   constructor(
     private readonly device: HID,
     private readonly devicePath: string,
-    private readonly strategy: ParseStrategy
+    private readonly strategy: ParseStrategy,
+    private readonly preprocessor?: (buf: Buffer) => Buffer | null
   ) {
     super()
     device.on('data', (buf: Buffer) => this.onData(buf))
@@ -22,8 +23,10 @@ export class HidReader extends EventEmitter {
     })
   }
 
-  private onData(buf: Buffer): void {
+  private onData(raw: Buffer): void {
     try {
+      const buf = this.preprocessor ? this.preprocessor(raw) : raw
+      if (!buf) return
       const events = parse(this.devicePath, buf, this.strategy, this.prevBuf)
       this.prevBuf = Buffer.from(buf)
       for (const evt of events) {

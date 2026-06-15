@@ -1,5 +1,18 @@
 // ─── Devices ─────────────────────────────────────────────────────────────────
 
+export interface TileInfo {
+  row: number
+  col: number
+  buttonIndex: number  // -1 = placeholder tile (no button in firmware)
+  label: string
+}
+
+export interface DeviceLayout {
+  rows: number
+  cols: number
+  tiles: TileInfo[]
+}
+
 export interface HidDeviceInfo {
   path: string
   vendorId: number
@@ -10,6 +23,7 @@ export interface HidDeviceInfo {
   usage: number
   usagePage: number
   isOpen: boolean
+  layout?: DeviceLayout
 }
 
 // ─── Events ──────────────────────────────────────────────────────────────────
@@ -69,6 +83,7 @@ export interface Profile {
   description?: string
   deviceVid?: number
   devicePid?: number
+  deviceName?: string
   appBundleId?: string
   appName?: string
   mappings: Mapping[]

@@ -1,15 +1,15 @@
-import { Usb, Map, List, Settings, Power } from 'lucide-react'
+import { Usb, List, Settings, Power, LayoutGrid } from 'lucide-react'
 import { useUiStore } from './store/uiStore'
 import { useMappingEnabled } from './hooks/useMappingEnabled'
 import { DevicesPage } from './pages/DevicesPage'
-import { MappingPage } from './pages/MappingPage'
 import { ProfilesPage } from './pages/ProfilesPage'
 import { SettingsPage } from './pages/SettingsPage'
+import { GridPage } from './pages/GridPage'
 import { UpdateBanner } from './components/UpdateBanner'
 
 const TABS = [
   { id: 'devices', label: 'Devices', Icon: Usb },
-  { id: 'mapping', label: 'Mapping', Icon: Map },
+  { id: 'grid', label: 'Key Map', Icon: LayoutGrid },
   { id: 'profiles', label: 'Profiles', Icon: List },
   { id: 'settings', label: 'Settings', Icon: Settings },
 ] as const
@@ -62,7 +62,7 @@ export function App() {
         {/* Content */}
         <main className="flex-1 min-w-0 overflow-y-auto bg-[var(--bg)]">
           {activeTab === 'devices' && <DevicesPage />}
-          {activeTab === 'mapping' && <MappingPage />}
+          {activeTab === 'grid' && <GridPage />}
           {activeTab === 'profiles' && <ProfilesPage />}
           {activeTab === 'settings' && <SettingsPage />}
         </main>

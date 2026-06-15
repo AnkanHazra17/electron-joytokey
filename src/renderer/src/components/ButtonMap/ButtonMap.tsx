@@ -33,7 +33,7 @@ export function ButtonMap({ profile, events, onCellClick }: Props) {
           {Array.from({ length: buttonCount }, (_, i) => (
             <ButtonCell
               key={i}
-              label={`B${i + 1}`}
+              label={buttonCount <= 8 ? `Button ${i + 1}` : `B${i + 1}`}
               isActive={buttonActive(i)}
               mapping={findMapping('button', i)}
               onClick={() => onCellClick('button', i)}
@@ -42,8 +42,8 @@ export function ButtonMap({ profile, events, onCellClick }: Props) {
         </div>
       </section>
 
-      {/* Hat / D-pad */}
-      <section>
+      {/* Hat / D-pad — hidden for devices without a hat (e.g. WhizToys 8-button) */}
+      {buttonCount > 8 && <section>
         <h3 className="text-xs uppercase tracking-wider text-[var(--text-muted)] mb-2">D-Pad</h3>
         <div className="grid grid-cols-3 gap-1 w-36">
           {[null, 0, null, 7, null, 1, 6, 8, 2, 5, null, 3, null, 4, null].map((dir, idx) =>
@@ -66,10 +66,10 @@ export function ButtonMap({ profile, events, onCellClick }: Props) {
             )
           )}
         </div>
-      </section>
+      </section>}
 
-      {/* Axes */}
-      <section>
+      {/* Axes — hidden when profile has no axes (e.g. WhizToys) */}
+      {axisCount > 0 && <section>
         <h3 className="text-xs uppercase tracking-wider text-[var(--text-muted)] mb-2">Axes</h3>
         <div className="flex flex-col gap-3 max-w-xs">
           {Array.from({ length: axisCount }, (_, i) => (
@@ -82,7 +82,7 @@ export function ButtonMap({ profile, events, onCellClick }: Props) {
             </div>
           ))}
         </div>
-      </section>
+      </section>}
     </div>
   )
 }
