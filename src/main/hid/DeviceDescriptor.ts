@@ -1,4 +1,5 @@
-import type { DeviceLayout } from '@shared/types'
+import type { DeviceLayout, TileInfo } from '@shared/types'
+import { WHIZTOYS_LAYOUT_REPORT_ID } from '@shared/constants'
 
 export interface ParseStrategy {
   axisCount: number
@@ -82,33 +83,33 @@ export function getStrategy(
   return genericGamepadStrategy
 }
 
-function buildWhizToysLayout(rows: number, cols: number): DeviceLayout {
-  const maxButtons = whizToysStrategy.buttonCount
-  const tiles = []
-  let btnIdx = 0
+/**
+ * Decode the firmware HID layout feature report (Report ID 2) into a DeviceLayout.
+ * Returns undefined if the report is absent/invalid (e.g. old firmware).
+ */
+export function parseWhizToysLayout(raw: Buffer | number[]): DeviceLayout | undefined {
+  const bytes = Array.from(raw)
+  if (bytes.length === 0) return undefined
+  // node-hid may prefix the report id; strip it.
+  const data = bytes[0] === WHIZTOYS_LAYOUT_REPORT_ID ? bytes.slice(1) : bytes
+  if (data[0] !== 0x01) return undefined // protocol version
+
+  const rows = (data[1] >> 4) & 0x0f
+  const cols = data[1] & 0x0f
+  if (rows === 0 || cols === 0 || rows * cols > 16) return undefined
+
+  const tiles: TileInfo[] = []
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
+      const idx = data[2 + r * cols + c]
+      const buttonIndex = idx === 0xff || idx === undefined ? -1 : idx
       tiles.push({
         row: r,
         col: c,
-        buttonIndex: btnIdx < maxButtons ? btnIdx : -1,
-        label: String(btnIdx + 1),
+        buttonIndex,
+        label: buttonIndex >= 0 ? String(buttonIndex + 1) : '',
       })
-      btnIdx++
     }
   }
   return { rows, cols, tiles }
-}
-
-export function getDeviceLayout(
-  _vendorId: number,
-  _productId: number,
-  product = '',
-  manufacturer = ''
-): DeviceLayout | undefined {
-  if (!isWhizToysDevice(product, manufacturer)) return undefined
-  // WTS2-jyt → size 2 → 2×2 grid, WTS3-jyt → size 3 → 3×3 grid, etc.
-  const match = product.match(/WTS(\d+)/i)
-  const size = match ? parseInt(match[1], 10) : 3
-  return buildWhizToysLayout(size, size)
 }

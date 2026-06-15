@@ -8,6 +8,9 @@ export const HAT_CENTERED = 8       // hat value when not pressed
 export const MAX_AXES = 16
 export const MAX_BUTTONS = 32
 
+export const WHIZTOYS_LAYOUT_REPORT_ID = 2
+export const WHIZTOYS_LAYOUT_REPORT_LEN = 18
+
 export const ROBOTJS_KEY_MAP: Record<string, string> = {
   space: 'space', return: 'return', escape: 'escape', tab: 'tab',
   delete: 'delete', backspace: 'delete',

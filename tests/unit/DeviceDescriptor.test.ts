@@ -3,6 +3,7 @@ import {
   isWhizToysDevice,
   normalizeWhizToysReport,
   getStrategy,
+  parseWhizToysLayout,
   whizToysStrategy,
   genericGamepadStrategy,
 } from '../../src/main/hid/DeviceDescriptor'
@@ -85,6 +86,65 @@ describe('getStrategy', () => {
   it('works with no name args (backwards-compatible)', () => {
     const s = getStrategy(0xFFFF, 0xFFFF)
     expect(s).toBe(genericGamepadStrategy)
+  })
+})
+
+// 3×3 report: version=0x01, rows=3 cols=3 (0x33), tiles 0..7, last cell empty (0xFF)
+// with report-id prefix: 02 01 33 00 01 02 03 04 05 06 07 FF FF FF FF FF FF FF
+const VALID_3x3_WITH_ID = [0x02, 0x01, 0x33, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]
+const VALID_3x3_NO_ID   = VALID_3x3_WITH_ID.slice(1)
+
+describe('parseWhizToysLayout', () => {
+  it('parses a 3×3 report with report-id prefix', () => {
+    const layout = parseWhizToysLayout(VALID_3x3_WITH_ID)
+    expect(layout).not.toBeUndefined()
+    expect(layout!.rows).toBe(3)
+    expect(layout!.cols).toBe(3)
+    expect(layout!.tiles).toHaveLength(9)
+  })
+
+  it('parses a 3×3 report without report-id prefix', () => {
+    const layout = parseWhizToysLayout(VALID_3x3_NO_ID)
+    expect(layout).not.toBeUndefined()
+    expect(layout!.rows).toBe(3)
+    expect(layout!.cols).toBe(3)
+  })
+
+  it('assigns button indices 0..7 to first 8 cells and -1 to the empty cell', () => {
+    const layout = parseWhizToysLayout(VALID_3x3_WITH_ID)!
+    for (let i = 0; i < 8; i++) {
+      expect(layout.tiles[i].buttonIndex).toBe(i)
+      expect(layout.tiles[i].label).toBe(String(i + 1))
+    }
+    expect(layout.tiles[8].buttonIndex).toBe(-1)
+    expect(layout.tiles[8].label).toBe('')
+  })
+
+  it('returns undefined for bad protocol version', () => {
+    const bad = [...VALID_3x3_NO_ID]
+    bad[0] = 0x02 // wrong version
+    expect(parseWhizToysLayout(bad)).toBeUndefined()
+  })
+
+  it('returns undefined when rows*cols > 16', () => {
+    // version=0x01, rows=5 cols=5 (0x55) → 25 cells
+    const bad = [0x01, 0x55, ...new Array(16).fill(0x00)]
+    expect(parseWhizToysLayout(bad)).toBeUndefined()
+  })
+
+  it('returns undefined for empty input', () => {
+    expect(parseWhizToysLayout([])).toBeUndefined()
+  })
+
+  it('returns undefined when rows or cols is zero', () => {
+    const bad = [0x01, 0x00, ...new Array(16).fill(0x00)]
+    expect(parseWhizToysLayout(bad)).toBeUndefined()
+  })
+
+  it('works with a Buffer input', () => {
+    const layout = parseWhizToysLayout(Buffer.from(VALID_3x3_WITH_ID))
+    expect(layout).not.toBeUndefined()
+    expect(layout!.rows).toBe(3)
   })
 })
 

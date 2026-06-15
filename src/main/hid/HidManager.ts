@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events'
-import type { HidDeviceInfo, JoystickEvent } from '@shared/types'
-import { HID_POLL_MS } from '@shared/constants'
-import { getStrategy, getDeviceLayout, normalizeWhizToysReport } from './DeviceDescriptor'
+import { HID_POLL_MS, WHIZTOYS_LAYOUT_REPORT_ID, WHIZTOYS_LAYOUT_REPORT_LEN } from '@shared/constants'
+import type { DeviceLayout, HidDeviceInfo, JoystickEvent } from '@shared/types'
+import { getStrategy, parseWhizToysLayout, normalizeWhizToysReport } from './DeviceDescriptor'
 import { HidReader } from './HidReader'
 import log from '../logger'
 
@@ -14,6 +14,7 @@ const USAGE_PAGE_GENERIC_DESKTOP = 1
 
 export class HidManager extends EventEmitter {
   private readers = new Map<string, HidReader>()
+  private layouts = new Map<string, DeviceLayout>()
   private pollTimer: ReturnType<typeof setInterval> | null = null
   private lastPaths = new Set<string>()
 
@@ -46,7 +47,7 @@ export class HidManager extends EventEmitter {
         usage: d.usage ?? 0,
         usagePage: d.usagePage ?? 0,
         isOpen: this.readers.has(d.path ?? ''),
-        layout: getDeviceLayout(d.vendorId, d.productId, d.product ?? '', d.manufacturer ?? ''),
+        layout: this.layouts.get(d.path ?? ''),
       }))
   }
 
@@ -64,11 +65,24 @@ export class HidManager extends EventEmitter {
       reader.on('joystick:input', (evt: JoystickEvent) => this.emit('joystick:input', evt))
       reader.on('error', () => {
         this.readers.delete(path)
+        this.layouts.delete(path)
         this.emit('devices:changed', this.enumerate())
       })
       this.readers.set(path, reader)
       log.info(`[HidManager] opened ${path} (${strategy.name})`)
       if (strategy.name === 'WhizToys BLE Gamepad') {
+        try {
+          const raw = device.getFeatureReport(
+            WHIZTOYS_LAYOUT_REPORT_ID,
+            WHIZTOYS_LAYOUT_REPORT_LEN + 1,
+          )
+          const layout = parseWhizToysLayout(raw)
+          if (layout) this.layouts.set(path, layout)
+          else this.layouts.delete(path)
+        } catch (err) {
+          this.layouts.delete(path)
+          log.warn(`[HidManager] no layout feature report from ${path}: ${String(err)}`)
+        }
         this.emit('whiztoys:connected', { path, product, vendorId, productId })
       }
       this.emit('devices:changed', this.enumerate())
@@ -82,6 +96,7 @@ export class HidManager extends EventEmitter {
     if (reader) {
       reader.close()
       this.readers.delete(path)
+      this.layouts.delete(path)
       log.info(`[HidManager] closed ${path}`)
       this.emit('device:disconnected', path)
       this.emit('devices:changed', this.enumerate())
