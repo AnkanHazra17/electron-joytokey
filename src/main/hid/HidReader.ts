@@ -34,6 +34,7 @@ export class HidReader extends EventEmitter {
         raw.length > 0 &&
         raw[0] === WHIZTOYS_LAYOUT_REPORT_ID
       ) {
+        log.info(`[HidReader] layout frame: ${raw.toString('hex')}`)
         const layout = parseWhizToysLayout(raw)
         if (layout) this.emit('whiztoys:layout', layout as DeviceLayout)
         return
