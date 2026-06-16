@@ -1,8 +1,9 @@
 import { EventEmitter } from 'events'
 import type { HID } from 'node-hid'
-import type { JoystickEvent } from '@shared/types'
+import { WHIZTOYS_LAYOUT_REPORT_ID } from '@shared/constants'
+import type { DeviceLayout, JoystickEvent } from '@shared/types'
 import { parse } from './HidParser'
-import type { ParseStrategy } from './DeviceDescriptor'
+import { parseWhizToysLayout, type ParseStrategy } from './DeviceDescriptor'
 import log from '../logger'
 
 export class HidReader extends EventEmitter {
@@ -25,6 +26,18 @@ export class HidReader extends EventEmitter {
 
   private onData(raw: Buffer): void {
     try {
+      // WhizToys delivers the tile layout as Report ID 2 (a notified input
+      // report, since Windows won't expose BLE HID feature reports). Intercept
+      // those frames and surface them as a layout instead of gamepad input.
+      if (
+        this.strategy.name === 'WhizToys BLE Gamepad' &&
+        raw.length > 0 &&
+        raw[0] === WHIZTOYS_LAYOUT_REPORT_ID
+      ) {
+        const layout = parseWhizToysLayout(raw)
+        if (layout) this.emit('whiztoys:layout', layout as DeviceLayout)
+        return
+      }
       const buf = this.preprocessor ? this.preprocessor(raw) : raw
       if (!buf) return
       const events = parse(this.devicePath, buf, this.strategy, this.prevBuf)

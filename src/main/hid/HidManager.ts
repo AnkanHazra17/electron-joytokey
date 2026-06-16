@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events'
-import { HID_POLL_MS, WHIZTOYS_LAYOUT_REPORT_ID, WHIZTOYS_LAYOUT_REPORT_LEN } from '@shared/constants'
+import { HID_POLL_MS } from '@shared/constants'
 import type { DeviceLayout, HidDeviceInfo, JoystickEvent } from '@shared/types'
-import { getStrategy, parseWhizToysLayout, normalizeWhizToysReport } from './DeviceDescriptor'
+import { getStrategy, normalizeWhizToysReport } from './DeviceDescriptor'
 import { HidReader } from './HidReader'
 import log from '../logger'
 
@@ -63,6 +63,15 @@ export class HidManager extends EventEmitter {
       const device = new HID(path)
       const reader = new HidReader(device, path, strategy, preprocessor)
       reader.on('joystick:input', (evt: JoystickEvent) => this.emit('joystick:input', evt))
+      // Layout arrives as Report ID 2 notifications (not a feature report); the
+      // firmware re-sends it for a few seconds after connect. Dedupe the repeats.
+      reader.on('whiztoys:layout', (layout: DeviceLayout) => {
+        const prev = this.layouts.get(path)
+        if (prev && JSON.stringify(prev) === JSON.stringify(layout)) return
+        this.layouts.set(path, layout)
+        log.info(`[HidManager] layout from ${path}: ${layout.rows}x${layout.cols}`)
+        this.emit('devices:changed', this.enumerate())
+      })
       reader.on('error', () => {
         this.readers.delete(path)
         this.layouts.delete(path)
@@ -71,18 +80,6 @@ export class HidManager extends EventEmitter {
       this.readers.set(path, reader)
       log.info(`[HidManager] opened ${path} (${strategy.name})`)
       if (strategy.name === 'WhizToys BLE Gamepad') {
-        try {
-          const raw = device.getFeatureReport(
-            WHIZTOYS_LAYOUT_REPORT_ID,
-            WHIZTOYS_LAYOUT_REPORT_LEN + 1,
-          )
-          const layout = parseWhizToysLayout(raw)
-          if (layout) this.layouts.set(path, layout)
-          else this.layouts.delete(path)
-        } catch (err) {
-          this.layouts.delete(path)
-          log.warn(`[HidManager] no layout feature report from ${path}: ${String(err)}`)
-        }
         this.emit('whiztoys:connected', { path, product, vendorId, productId })
       }
       this.emit('devices:changed', this.enumerate())
